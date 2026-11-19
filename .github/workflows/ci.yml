@@ -1,0 +1,47 @@
+
+name: CloudOps CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Check backend formatting
+        working-directory: backend
+        run: npm run lint
+
+      - name: Validate Docker Compose
+        run: docker compose config
+
+      - name: Build backend image
+        run: |
+          docker build \
+            -f backend/Dockerfile.prod \
+            -t cloudops-backend:ci ./backend
+
+      - name: Build frontend image
+        run: |
+          docker build \
+            -f frontend/Dockerfile.prod \
+            -t cloudops-frontend:ci ./frontend
